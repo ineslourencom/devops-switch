@@ -1,0 +1,85 @@
+pipeline {
+ agent any
+
+    environment{
+        DOCKERHUB_CREDENTIALS = credentials('docker-hub-credentials')
+    }
+
+
+stages {
+    stage('Checkout') {
+        steps {
+            echo 'Checking out...'
+                git credentialsId: 'ineslourencom',
+                url: 'https://bitbucket.org/ineslourencom/devops-21-22-atb-1211767/'
+
+        }
+    }
+
+    stage('Assemble') {
+        steps {
+            dir ("CA2/Part2/react-and-spring-data-rest-basic"){
+            echo 'Assembling...'
+            sh './gradlew assemble'
+            }
+        }
+    }
+
+    stage('Test') {
+        steps {
+            dir ("CA2/Part2/react-and-spring-data-rest-basic"){
+            echo 'Testing...'
+            sh './gradlew test'
+            junit 'build/test-results/test/*.xml'
+            }
+        }
+    }
+
+    stage('Publish Javadoc'){
+        steps{
+            echo 'Creating Javadoc...'
+            dir ("CA2/Part2/react-and-spring-data-rest-basic"){
+            sh './gradlew javadoc'
+             publishHTML([allowMissing: false,
+                      alwaysLinkToLastBuild: true,
+                      keepAll: true, reportDir: 'build/docs/javadoc',
+                      reportFiles: 'index.html', reportName: 'HTML Report',
+                      reportTitles: ''])
+            }
+        }
+    }
+
+
+
+    stage('Archiving') {
+        steps {
+            echo 'Archiving...'
+            dir ("CA2/Part2/react-and-spring-data-rest-basic"){
+                archiveArtifacts 'build/libs/*'
+            }
+        }
+    }
+
+     stage('Login Docker'){
+        steps{
+            script{
+            docker.withRegisty('https://registry.hub.docker.com/', 'docker-hub-credentials')
+            }
+
+        }
+
+     }
+     stage ('Docker Image') {
+        steps {
+            script {
+                dir("CA5/Part2"){
+                        def customImage = docker.build("ineslourencom/my-image:${env.BUILD_ID}")
+                        customImage.push()
+
+                }
+            }
+        }
+     }
+
+}
+}

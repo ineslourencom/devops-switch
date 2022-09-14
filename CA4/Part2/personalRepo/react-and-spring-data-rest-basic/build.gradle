@@ -1,0 +1,67 @@
+plugins {
+	id 'org.springframework.boot' version '2.2.5.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'java'
+	id "org.siouan.frontend" version "1.4.1"
+	id 'war'
+}
+
+group = 'com.greglturnquist'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	runtimeOnly 'com.h2database:h2'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+	// To support war file for deploying to tomcat
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+}
+
+
+frontend {
+	// nodeVersion = '10.15.3'
+	nodeVersion = '12.13.1'
+	// See 'scripts' section in your 'package.json file'
+	//cleanScript = 'run clean'
+	//assembleScript = 'run assemble'
+	assembleScript = 'run webpack'
+	//checkScript = 'run check'
+}
+
+war {
+	enabled=true
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
+task deleteFrontEnd (type: Delete){
+	delete('src/resources/main/static/built/')
+	println 'FrontEnd files deleted'
+}
+
+
+clean{
+	doFirst {
+		deleteFrontEnd
+	}
+
+}
+
+
+task copyJar(type: Copy){
+	from 'build/libs/'
+	into 'dist/'
+	println 'Jar files archived in folder dist'
+}
